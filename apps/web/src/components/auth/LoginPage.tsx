@@ -1,5 +1,5 @@
 import React, { FormEvent, useState } from 'react';
-import { ArrowRight, Eye, EyeOff, LogIn, Mail, Shapes, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, LogIn, Mail, Shapes, UserPlus } from 'lucide-react';
 import { api } from '../../services/api';
 
 interface LoginPageProps {
@@ -53,12 +53,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6 relative overflow-hidden">
-      <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-blue-200/40 blur-3xl" />
-      <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-indigo-200/40 blur-3xl" />
-
-      <section className="relative w-full max-w-5xl grid lg:grid-cols-[1.05fr_0.95fr] bg-white rounded-[2rem] border border-slate-200/80 shadow-2xl shadow-slate-300/30 overflow-hidden">
-        <div className="hidden lg:flex bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-800 p-12 text-white flex-col justify-between min-h-[620px]">
+    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6 py-8 overflow-y-auto">
+      <section className="w-full max-w-5xl grid lg:grid-cols-[1.05fr_0.95fr] bg-white rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-300/20 overflow-hidden">
+        <div className="hidden lg:flex bg-slate-950 p-12 text-white flex-col justify-between lg:min-h-[620px]">
           <div>
             <div className="flex items-center gap-3 mb-16">
               <div className="w-11 h-11 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center">
@@ -66,21 +63,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
               </div>
               <span className="text-xl font-bold tracking-tight">Zheagram</span>
             </div>
-            <p className="text-sm uppercase tracking-[0.24em] text-blue-200 font-semibold mb-5">Your visual workspace</p>
+            <p className="text-sm font-semibold text-blue-300 mb-5">Diagram workspace</p>
             <h1 className="text-5xl font-bold leading-[1.08] tracking-tight max-w-md">
-              Turn ideas into clear, connected diagrams.
+              Make the structure visible.
             </h1>
-            <p className="mt-6 text-blue-100/80 leading-7 max-w-md">
-              Create flowcharts, mind maps, canvases, and documents that stay available wherever you work.
+            <p className="mt-6 text-slate-300 leading-7 max-w-md">
+              Build flowcharts, mind maps, and documents on one open canvas.
             </p>
           </div>
-          <div className="flex items-center gap-3 text-sm text-blue-100/70">
-            <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            Secure cloud workspace powered by Supabase
+          <div className="text-sm text-slate-400">
+            Your boards are saved to your workspace account.
           </div>
         </div>
 
-        <div className="p-7 sm:p-12 flex flex-col justify-center min-h-[620px]">
+        <div className="p-6 sm:p-12 flex flex-col justify-center lg:min-h-[620px]">
           <div className="lg:hidden flex items-center gap-3 mb-10">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
               <Shapes className="w-6 h-6" />
@@ -102,14 +98,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
             <button
               type="button"
               onClick={() => { setMode('login'); setError(''); setMessage(''); }}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${mode === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              aria-pressed={mode === 'login'}
+              className={`flex-1 min-h-11 rounded-lg text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${mode === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
             >
               Sign in
             </button>
             <button
               type="button"
               onClick={() => { setMode('signup'); setError(''); setMessage(''); }}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${mode === 'signup' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              aria-pressed={mode === 'signup'}
+              className={`flex-1 min-h-11 rounded-lg text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${mode === 'signup' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
             >
               Create account
             </button>
@@ -124,7 +122,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
                   onChange={(event) => setName(event.target.value)}
                   autoComplete="name"
                   placeholder="Your name"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/70 text-sm outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all"
+                  className="w-full px-4 py-3 rounded-lg border border-slate-300 bg-slate-50/70 text-sm outline-none focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition-all"
                 />
               </label>
             )}
@@ -140,7 +138,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
                   autoComplete="email"
                   placeholder="you@example.com"
                   required
-                  className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/70 text-sm outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all"
+                  className="w-full pl-11 pr-4 py-3 rounded-lg border border-slate-300 bg-slate-50/70 text-sm outline-none focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition-all"
                 />
               </div>
             </label>
@@ -155,12 +153,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
                   autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                   placeholder="At least 6 characters"
                   required
-                  className="w-full pl-4 pr-11 py-3 rounded-xl border border-slate-200 bg-slate-50/70 text-sm outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all"
+                  className="w-full pl-4 pr-11 py-3 rounded-lg border border-slate-300 bg-slate-50/70 text-sm outline-none focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((visible) => !visible)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-600"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 min-w-11 min-h-11 flex items-center justify-center text-slate-600 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-lg"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -168,23 +166,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onAuthenticated }) => {
               </div>
             </label>
 
-            {error && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">{error}</p>}
-            {message && <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">{message}</p>}
+            {error && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">{error}</p>}
+            {message && <p role="status" aria-live="polite" className="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2.5">{message}</p>}
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-lg shadow-blue-600/20 transition-all disabled:opacity-60 disabled:cursor-wait"
+              className="w-full min-h-12 flex items-center justify-center gap-2 py-3 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-sm font-bold shadow-md shadow-blue-700/15 transition-all disabled:opacity-60 disabled:cursor-wait focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2"
             >
               {mode === 'login' ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
               {isSubmitting ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create account'}
-              {!isSubmitting && <ArrowRight className="w-4 h-4 ml-auto" />}
             </button>
           </form>
-
-          <p className="text-xs text-slate-400 text-center mt-7">
-            By continuing, you agree to keep your workspace account secure.
-          </p>
         </div>
       </section>
     </main>

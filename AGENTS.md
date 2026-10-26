@@ -26,3 +26,18 @@
 
 - After engine or interaction changes, run `npm test`; after web/build changes, run `npm run build` as well.
 - Do not treat a successful TypeScript check alone as a successful build: `npm run build` must complete through Vite.
+
+<!-- antislop:start -->
+## antislop
+
+For UI, copy, people, mobile layout, or code comment work, read the AntiSlop core and the relevant project skill before editing:
+
+- Core: `.agents/skills/antislop/SKILL.md`
+- UI / visual: `.agents/skills/antislop-ui/SKILL.md`
+- Copy and text: `.agents/skills/antislop-copywriting/SKILL.md`
+- People and accessibility: `.agents/skills/antislop-human/SKILL.md`
+- Mobile / responsive: `.agents/skills/antislop-layoutmobile/SKILL.md`
+- Code comments: `.agents/skills/antislop-code/SKILL.md`
+
+Use AntiSlop during project work unless the user explicitly selects after mode for a session.
+<!-- antislop:end -->
