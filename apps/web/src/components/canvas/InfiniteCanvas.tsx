@@ -52,7 +52,6 @@ import { InlineTextEditor } from './InlineTextEditor';
 import { InlineLaneTitleEditor } from './InlineLaneTitleEditor';
 import { ConnectorLayer } from './ConnectorLayer';
 import { ShapeAnchorsOverlay, ConnectableObject } from './ShapeAnchorsOverlay';
-import { MultiplayerCursorsOverlay } from './MultiplayerCursorsOverlay';
 import { FloatingConnectorToolbar } from './FloatingConnectorToolbar';
 import { CanvasScrollbars } from './CanvasScrollbars';
 
@@ -3224,9 +3223,6 @@ export const InfiniteCanvas: React.FC = () => {
             className="pointer-events-none"
           />
         )}
-
-        {/* Real-time Multiplayer Cursors Layer */}
-        <MultiplayerCursorsOverlay />
 
         {/* Live Connector Drag Preview */}
         {dragMode.type === 'connector' && (() => {

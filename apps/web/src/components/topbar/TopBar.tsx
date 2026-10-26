@@ -6,7 +6,6 @@ import {
   LayoutGrid,
   Cloud,
   Download,
-  Users,
   Image as ImageIcon,
   FileCode,
   Database,
@@ -40,9 +39,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   const {
     documentStore,
     boardVersion,
-    collaborators,
-    isMultiplayerEnabled,
-    toggleMultiplayer,
   } = useCanvasStore();
 
   const [title, setTitle] = useState('Untitled Diagram');
@@ -210,7 +206,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
       </div>
 
-      {/* Right: Templates, Export, Live Collaborators & Share */}
+      {/* Right: Templates, Export & Share */}
       <div className="flex items-center gap-2 pointer-events-auto">
         {/* Template Library Button */}
         {onOpenTemplates && (
@@ -272,35 +268,6 @@ export const TopBar: React.FC<TopBarProps> = ({
               </button>
             </div>
           )}
-        </div>
-
-        {/* Live Collaborators Presence */}
-        <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md border border-slate-200/80 px-2.5 py-1 rounded-xl shadow-xs">
-          <div className="flex -space-x-1.5 items-center mr-1">
-            {collaborators.map((c) => (
-              <div
-                key={c.id}
-                title={`${c.name} (${c.role})`}
-                style={{ backgroundColor: c.color }}
-                className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white shadow-xs"
-              >
-                {c.name.charAt(0)}
-              </div>
-            ))}
-          </div>
-
-          <button
-            onClick={toggleMultiplayer}
-            title={isMultiplayerEnabled ? 'Hide live teammate cursors' : 'Show live teammate cursors'}
-            className={`p-1 rounded-lg transition-colors flex items-center gap-1 text-[11px] font-medium ${
-              isMultiplayerEnabled
-                ? 'text-emerald-700 bg-emerald-50'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{isMultiplayerEnabled ? 'Live' : 'Paused'}</span>
-          </button>
         </div>
 
         {/* Share Button */}
