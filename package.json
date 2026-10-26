@@ -1,0 +1,14 @@
+{
+  "name": "zheagram-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm --workspace=@diagrammer/web run dev",
+    "build": "npm --workspace=@diagrammer/web run build",
+    "test": "node --test"
+  }
+}

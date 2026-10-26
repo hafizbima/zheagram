@@ -1,0 +1,18 @@
+node_modules/
+dist/
+build/
+coverage/
+*.log
+*.local
+.env
+.env.*
+!.env.example
+
+# Private desktop-agent workspace data
+.opencode/omnirush/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
