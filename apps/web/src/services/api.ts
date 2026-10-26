@@ -1,6 +1,5 @@
 import { storage, StoredBoard } from './storage';
-
-const API_BASE = 'http://localhost:3001/api';
+import { isSupabaseConfigured, supabase } from './supabase';
 
 export interface BoardSummary {
   id: string;
@@ -20,93 +19,203 @@ export interface UserProfile {
   avatarUrl?: string | null;
 }
 
+interface BoardRow {
+  id: string;
+  owner_id: string;
+  title: string;
+  thumbnail_url?: string | null;
+  folder_id?: string | null;
+  is_favorite: boolean;
+  data: StoredBoard['data'];
+  created_at: string;
+  updated_at: string;
+}
+
+function toStoredBoard(row: BoardRow): StoredBoard {
+  return {
+    id: row.id,
+    title: row.title,
+    thumbnailUrl: row.thumbnail_url ?? null,
+    folderId: row.folder_id ?? null,
+    isFavorite: row.is_favorite,
+    data: row.data || { objects: {}, order: [] },
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function toBoardSummary(board: StoredBoard): BoardSummary {
+  return {
+    id: board.id,
+    title: board.title,
+    thumbnailUrl: board.thumbnailUrl || null,
+    folderId: board.folderId || null,
+    isFavorite: board.isFavorite,
+    objectCount: board.data?.order?.length || 0,
+    createdAt: board.createdAt,
+    updatedAt: board.updatedAt,
+  };
+}
+
+function toBoardRow(board: StoredBoard, ownerId: string): BoardRow {
+  return {
+    id: board.id,
+    owner_id: ownerId,
+    title: board.title,
+    thumbnail_url: board.thumbnailUrl || null,
+    folder_id: board.folderId || null,
+    is_favorite: board.isFavorite,
+    data: board.data,
+    created_at: board.createdAt,
+    updated_at: board.updatedAt,
+  };
+}
+
+async function ensureSupabaseUser() {
+  if (!supabase) throw new Error('Supabase is not configured');
+
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw sessionError;
+  if (sessionData.session?.user) return sessionData.session.user;
+
+  throw new Error('Authentication required');
+}
+
+async function getSupabaseUserProfile(): Promise<UserProfile> {
+  const user = await ensureSupabaseUser();
+  if (user.is_anonymous) throw new Error('Authentication required');
+  const name = user.user_metadata?.name || 'Anonymous User';
+
+  return {
+    id: user.id,
+    email: user.email || `${user.id.slice(0, 8)}@anonymous.local`,
+    name,
+    avatarUrl: user.user_metadata?.avatar_url || null,
+  };
+}
+
 export const api = {
-  // Auth
+  async signIn(email: string, password: string): Promise<UserProfile> {
+    if (!supabase) throw new Error('Supabase is not configured');
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) throw error || new Error('Unable to sign in');
+    return getSupabaseUserProfile();
+  },
+
+  async signUp(email: string, password: string, name: string): Promise<{ user: UserProfile | null; needsEmailConfirmation: boolean }> {
+    if (!supabase) throw new Error('Supabase is not configured');
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name } },
+    });
+    if (error) throw error;
+
+    return {
+      user: data.session?.user ? await getSupabaseUserProfile() : null,
+      needsEmailConfirmation: !data.session,
+    };
+  },
+
+  async signOut(): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  },
+
   async demoLogin(): Promise<{ user: UserProfile; token: string }> {
-    try {
-      const res = await fetch(`${API_BASE}/auth/demo`, { method: 'POST' });
-      if (!res.ok) throw new Error('Demo login failed');
-      const data = await res.json();
-      localStorage.setItem('diagrammer_token', data.token);
-      return data;
-    } catch {
-      // Offline fallback
-      return {
-        user: { id: 'usr-demo', email: 'demo@diagrammer.io', name: 'Alex Developer' },
-        token: 'mock-token',
-      };
+    if (isSupabaseConfigured) {
+      const user = await getSupabaseUserProfile();
+      const { data } = await supabase!.auth.getSession();
+      return { user, token: data.session?.access_token || '' };
     }
+
+    return {
+      user: { id: 'usr-demo', email: 'demo@diagrammer.io', name: 'Alex Developer' },
+      token: 'mock-token',
+    };
   },
 
   async getMe(): Promise<UserProfile | null> {
-    const token = localStorage.getItem('diagrammer_token');
-    if (!token) {
-      return { id: 'usr-demo', email: 'demo@diagrammer.io', name: 'Alex Developer' };
+    if (isSupabaseConfigured) {
+      try {
+        const { data } = await supabase!.auth.getSession();
+        return data.session?.user ? await getSupabaseUserProfile() : null;
+      } catch {
+        return null;
+      }
     }
-    try {
-      const res = await fetch(`${API_BASE}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Unauthorized');
-      return await res.json();
-    } catch {
-      return { id: 'usr-demo', email: 'demo@diagrammer.io', name: 'Alex Developer' };
-    }
+
+    return { id: 'usr-demo', email: 'demo@diagrammer.io', name: 'Alex Developer' };
   },
 
-  // Boards
   async listBoards(params?: { favorite?: boolean; search?: string }): Promise<BoardSummary[]> {
-    try {
-      const query = new URLSearchParams();
-      if (params?.favorite) query.set('favorite', 'true');
-      if (params?.search) query.set('search', params.search);
+    if (isSupabaseConfigured) {
+      try {
+        await ensureSupabaseUser();
+        let query = supabase!
+          .from('boards')
+          .select('*')
+          .order('updated_at', { ascending: false });
 
-      const res = await fetch(`${API_BASE}/boards?${query.toString()}`, {
-        signal: AbortSignal.timeout(1500),
-      });
-      if (!res.ok) throw new Error('Failed to fetch from server');
-      const remoteBoards = await res.json();
-      return remoteBoards;
-    } catch {
-      // Offline-first storage
-      return await storage.listBoards(params);
+        if (params?.favorite) query = query.eq('is_favorite', true);
+        if (params?.search) query = query.ilike('title', `%${params.search}%`);
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return (data as BoardRow[]).map(toStoredBoard).map(toBoardSummary);
+      } catch {
+        return await storage.listBoards(params);
+      }
     }
+
+    return await storage.listBoards(params);
   },
 
   async createBoard(title: string, template: string = 'blank'): Promise<StoredBoard> {
     const local = await storage.createBoard(title, template);
 
-    try {
-      const res = await fetch(`${API_BASE}/boards`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: local.id, title, template }),
-        signal: AbortSignal.timeout(1500),
-      });
-      if (res.ok) {
-        const remote = await res.json();
+    if (isSupabaseConfigured) {
+      try {
+        const user = await ensureSupabaseUser();
+        const { data, error } = await supabase!
+          .from('boards')
+          .insert(toBoardRow(local, user.id))
+          .select()
+          .single();
+        if (error) throw error;
+
+        const remote = toStoredBoard(data as BoardRow);
+        await storage.saveBoard(remote.id, remote);
         return remote;
+      } catch {
+        // Offline/local fallback is already ready.
       }
-    } catch {
-      // offline fallback is ready
     }
 
     return local;
   },
 
   async getBoard(id: string): Promise<StoredBoard | null> {
-    try {
-      const res = await fetch(`${API_BASE}/boards/${id}`, {
-        signal: AbortSignal.timeout(1500),
-      });
-      if (res.ok) {
-        const remote = await res.json();
-        // sync to local storage
-        await storage.saveBoard(id, remote);
-        return remote;
+    if (isSupabaseConfigured) {
+      try {
+        await ensureSupabaseUser();
+        const { data, error } = await supabase!
+          .from('boards')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        if (error) throw error;
+        if (data) {
+          const remote = toStoredBoard(data as BoardRow);
+          await storage.saveBoard(id, remote);
+          return remote;
+        }
+      } catch {
+        // Offline/local fallback below.
       }
-    } catch {
-      // offline fallback
     }
 
     return await storage.getBoard(id);
@@ -116,33 +225,44 @@ export const api = {
     id: string,
     patch: { title?: string; isFavorite?: boolean; data?: any }
   ): Promise<void> {
-    // 1. Immediately persist to offline storage
     await storage.saveBoard(id, patch);
 
-    // 2. Optimistically attempt server sync if connected
-    try {
-      await fetch(`${API_BASE}/boards/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-        signal: AbortSignal.timeout(2000),
-      });
-    } catch {
-      // Stored safely locally
+    if (isSupabaseConfigured) {
+      try {
+        await ensureSupabaseUser();
+        const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
+        if (patch.title !== undefined) update.title = patch.title;
+        if (patch.isFavorite !== undefined) update.is_favorite = patch.isFavorite;
+        if (patch.data !== undefined) update.data = patch.data;
+
+        const { error } = await supabase!.from('boards').update(update).eq('id', id);
+        if (error) throw error;
+      } catch {
+        // Stored safely locally; it can sync on a later save.
+      }
     }
   },
 
   async duplicateBoard(id: string): Promise<StoredBoard | null> {
     const local = await storage.duplicateBoard(id);
+    if (!local) return null;
 
-    try {
-      const res = await fetch(`${API_BASE}/boards/${id}/duplicate`, {
-        method: 'POST',
-        signal: AbortSignal.timeout(1500),
-      });
-      if (res.ok) return await res.json();
-    } catch {
-      // offline fallback
+    if (isSupabaseConfigured) {
+      try {
+        const user = await ensureSupabaseUser();
+        const { data, error } = await supabase!
+          .from('boards')
+          .insert(toBoardRow(local, user.id))
+          .select()
+          .single();
+        if (error) throw error;
+
+        const remote = toStoredBoard(data as BoardRow);
+        await storage.saveBoard(remote.id, remote);
+        return remote;
+      } catch {
+        // Offline/local fallback is already ready.
+      }
     }
 
     return local;
@@ -154,19 +274,20 @@ export const api = {
   },
 
   async deleteBoard(id: string): Promise<boolean> {
-    const localRes = await storage.deleteBoard(id);
+    const localResult = await storage.deleteBoard(id);
 
-    try {
-      const res = await fetch(`${API_BASE}/boards/${id}`, {
-        method: 'DELETE',
-        signal: AbortSignal.timeout(1500),
-      });
-      if (res.ok) return true;
-    } catch {
-      // offline fallback
+    if (isSupabaseConfigured) {
+      try {
+        await ensureSupabaseUser();
+        const { error } = await supabase!.from('boards').delete().eq('id', id);
+        if (error) throw error;
+      } catch {
+        // Offline/local fallback is already complete.
+      }
     }
 
-    return localRes;
+    return localResult;
   },
 };
+
 export { storage };

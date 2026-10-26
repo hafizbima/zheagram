@@ -25,12 +25,14 @@ interface HomePageProps {
   onOpenBoard: (boardId: string) => void;
   onCreateBoard: (title: string, template?: string) => Promise<void>;
   currentBoardId?: string;
+  onSignOut?: () => Promise<void>;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
   onOpenBoard,
   onCreateBoard,
   currentBoardId,
+  onSignOut,
 }) => {
   const [boards, setBoards] = useState<BoardSummary[]>([]);
   const [filter, setFilter] = useState<'all' | 'favorites'>('all');
@@ -208,14 +210,18 @@ export const HomePage: React.FC<HomePageProps> = ({
           <div className="h-6 w-px bg-slate-200" />
 
           {/* User Profile Pill */}
-          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-medium">
+          <button
+            onClick={onSignOut}
+            title={onSignOut ? 'Sign out' : undefined}
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition-colors"
+          >
             <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-[10px]">
               {user?.name ? user.name.slice(0, 2).toUpperCase() : 'ME'}
             </div>
             <span className="hidden sm:inline font-semibold text-slate-800 max-w-[120px] truncate">
               {user?.name || 'Local User'}
             </span>
-          </div>
+          </button>
         </div>
       </header>
 

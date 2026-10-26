@@ -8,9 +8,11 @@ import { PropertiesPanel } from './components/properties/PropertiesPanel';
 import { DashboardModal } from './components/dashboard/DashboardModal';
 import { TemplatePickerModal } from './components/modals/TemplatePickerModal';
 import { HomePage } from './components/home/HomePage';
+import { LoginPage } from './components/auth/LoginPage';
 import { Keyboard, X } from 'lucide-react';
 import { useCanvasStore } from './stores/useCanvasStore';
-import { api, storage } from './services/api';
+import { api, storage, UserProfile } from './services/api';
+import { isSupabaseConfigured, supabase } from './services/supabase';
 
 type AppView = 'home' | 'canvas';
 
@@ -20,8 +22,37 @@ export const App: React.FC = () => {
   const [showDashboard, setShowDashboard] = useState(false);
   const [showTemplatesModal, setShowTemplatesModal] = useState(false);
   const [currentBoardId, setCurrentBoardId] = useState('board-demo-flowchart');
+  const [authUser, setAuthUser] = useState<UserProfile | null>(null);
+  const [authLoading, setAuthLoading] = useState(isSupabaseConfigured);
 
   const { loadBoardState } = useCanvasStore();
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      setAuthLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    const loadSession = async () => {
+      const user = await api.getMe();
+      if (isMounted) {
+        setAuthUser(user);
+        setAuthLoading(false);
+      }
+    };
+
+    loadSession();
+    const { data } = supabase.auth.onAuthStateChange(async () => {
+      const user = await api.getMe();
+      if (isMounted) setAuthUser(user);
+    });
+
+    return () => {
+      isMounted = false;
+      data.subscription.unsubscribe();
+    };
+  }, []);
 
   const handleSelectBoard = async (boardId: string) => {
     setCurrentBoardId(boardId);
@@ -45,6 +76,13 @@ export const App: React.FC = () => {
   };
 
   const handleNavigateHome = () => {
+    setView('home');
+    window.location.hash = '#home';
+  };
+
+  const handleSignOut = async () => {
+    await api.signOut();
+    setAuthUser(null);
     setView('home');
     window.location.hash = '#home';
   };
@@ -96,12 +134,21 @@ export const App: React.FC = () => {
     };
   }, []);
 
+  if (authLoading) {
+    return <div className="min-h-screen bg-slate-50 flex items-center justify-center text-sm text-slate-500">Loading workspace...</div>;
+  }
+
+  if (isSupabaseConfigured && !authUser) {
+    return <LoginPage onAuthenticated={() => api.getMe().then(setAuthUser)} />;
+  }
+
   if (view === 'home') {
     return (
       <HomePage
         onOpenBoard={handleSelectBoard}
         onCreateBoard={handleCreateBoard}
         currentBoardId={currentBoardId}
+        onSignOut={isSupabaseConfigured ? handleSignOut : undefined}
       />
     );
   }
